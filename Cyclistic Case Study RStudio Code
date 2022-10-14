@@ -1,0 +1,245 @@
+//DATA UPLOAD
+
+//Upload zipped data and setting the folder as working directory
+setwd("/cloud/project/Case Study Data")
+
+//Load tidyverse library
+library(tidyverse)
+
+//Start creating dataframes
+aug21_df <- read_csv("202108-divvy-tripdata.csv")
+
+//Resulting data frames 
+aug21_df <- read_csv("202108-divvy-tripdata.csv")
+sep21_df <- read_csv("202109-divvy-tripdata.csv")
+oct21_df <- read_csv("202110-divvy-tripdata.csv")
+nov21_df <- read_csv("202111-divvy-tripdata.csv")
+dec21_df <- read_csv("202112-divvy-tripdata.csv")
+jan22_df <- read_csv("202201-divvy-tripdata.csv")
+feb22_df <- read_csv("202202-divvy-tripdata.csv")
+mar22_df <- read_csv("202203-divvy-tripdata.csv")
+apr22_df <- read_csv("202204-divvy-tripdata.csv")
+may22_df <- read_csv("202205-divvy-tripdata.csv")
+jun22_df <- read_csv("202206-divvy-tripdata.csv")
+jul22_df <- read_csv("202207-divvy-tripdata.csv")
+
+//Merge all of the uploaded data frames into one 
+merged_df <- rbind(apr22_df, aug21_df, dec21_df, feb22_df, jan22_df, jul22_df, jun22_df, mar22_df, may22_df, nov21_df, oct21_df, sep21_df)
+//View the merged data frame
+View(merged_df)
+
+//Use na.omit function to remove NA values
+na_data <- na.omit(merged_df)
+
+//View the cleaned data frame
+View(na_data)
+
+//Remove old data frames for individual months from the Global Environment
+remove(apr22_df, aug21_df, dec21_df, feb22_df, jan22_df, jul22_df, jun22_df, mar22_df, may22_df, nov21_df, oct21_df, sep21_df)
+
+//Remove duplicate rows with same ride_id, the number of entries stayed the same meaning no duplicates were present
+no_dupl <- na_data[!duplicated(na_data$ride_id), ]
+
+//Merge no_dupl into a new data frame to proceed with manipulation
+cycl_df <- no_dupl
+
+
+//DATA MANIPULATION
+
+//Rename subscribers to members and customers to casual
+cycl_df <-  cycl_df %>% 
+      mutate(member_casual = recode(member_casual
+                                    ,"Subscriber" = "member"
+                                    ,"Customer" = "casual"))
+
+//Add season column depending of the month
+cycl_df <-cycl_df %>% mutate(season = case_when(month == "03" ~ "Spring",
+                                                          month == "04" ~ "Spring",
+                                                          month == "05" ~ "Spring",
+                                                          month == "06"  ~ "Summer",
+                                                          month == "07"  ~ "Summer",
+                                                          month == "08"  ~ "Summer",
+                                                          month == "09" ~ "Fall",
+                                                          month == "10" ~ "Fall",
+                                                          month == "11" ~ "Fall",
+                                                          month == "12" ~ "Winter",
+                                                          month == "01" ~ "Winter",                                                          
+																													month == "02" ~ "Winter" 
+)
+
+//Add new columns such as: date, month, day, year and day of week, ride length (in seconds)
+cycl_df$date <- as.Date(cycl_df$started_at)
+cycl_df$month <- format(as.Date(cycl_df$date), "%m")
+cycl_df$day <- format(as.Date(cycl_df$date), "%d")
+cycl_df$year <- format(as.Date(cycl_df$date), "%Y")
+cycl_df$day_of_week <- format(as.Date(cycl_df$date), "%A")
+
+cycl_df$ride_length <- difftime(cycl_df$ended_at,cycl_df$started_at)
+
+//Inspect the data in cycl_df
+str(all_trips)
+
+//Check the ride_length format
+> is.factor(cycl_df$ride_length)
+[1] FALSE
+
+//Second check
+> is.numeric(cycl_df$ride_length)
+[1] FALSE
+
+//Convert to numeric value
+cycl_df$ride_length <- as.numeric(as.character(cycl_df$ride_length))
+
+//Check once again 
+> is.numeric(cycl_df$ride_length)
+[1] TRUE
+
+//Clean from unnecessary/invalid data and place it into the final data frame
+all_trips <- cycl_df[!(cycl_df$start_station_name == "HQ QR" | cycl_df$ride_length<0),]
+
+
+//DESCRIPTIVE ANALYSIS
+
+//Analyse one by one
+> mean(all_trips$ride_length)
+[1] 1110.32
+> max(all_trips$ride_length)
+[1] 2497750
+> min(all_trips$ride_length)
+[1] 0
+> median(all_trips$ride_length)
+[1] 673
+
+//The summary function includes all of the info above
+> summary(all_trips$ride_length)
+
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0     384     673    1110    1211 2497750
+
+//Compare casual riders with members using different variables
+//Mean ride length
+> aggregate(all_trips$ride_length ~ all_trips$member_casual, FUN = mean)
+
+  all_trips$member_casual all_trips$ride_length
+1                  casual             1597.3286
+2                  member              756.0612
+
+//Median ride length
+> aggregate(all_trips$ride_length ~ all_trips$member_casual, FUN = median)
+
+  all_trips$member_casual all_trips$ride_length
+1                  casual                   907
+2                  member                   550
+
+//Max ride length
+> aggregate(all_trips$ride_length ~ all_trips$member_casual, FUN = max)
+
+  all_trips$member_casual all_trips$ride_length
+1                  casual               2497750
+2                  member                 89575
+
+//Min ride length
+> aggregate(all_trips$ride_length ~ all_trips$member_casual, FUN = min)
+  
+  all_trips$member_casual all_trips$ride_length
+1                  casual                     0
+2                  member                     0
+
+//Ride length analysis per day
+//Order days of week column from Monday to Sunday
+all_trips$day_of_week <- ordered(all_trips$day_of_week, levels=c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+//Average time by each day -> weekend rides have the highest values
+aggregate(all_trips$ride_length ~ all_trips$member_casual + all_trips$day_of_week, FUN = mean)
+
+all_trips$member_casual all_trips$day_of_week all_trips$ride_length
+1                   casual                Monday             1659.8060
+2                   member                Monday              732.9845
+3                   casual               Tuesday             1392.1090
+4                   member               Tuesday              705.1464
+5                   casual             Wednesday             1368.3203
+6                   member             Wednesday              713.3416
+7                   casual              Thursday             1404.6254
+8                   member              Thursday              723.8237
+9                   casual                Friday             1479.6883
+10                  member                Friday              735.2367
+11                  casual              Saturday             1742.3011
+12                  member              Saturday              853.4105
+13                  casual                Sunday             1837.5038
+14                  member                Sunday              860.6032
+
+//Max ride length -> weekends have the highest values 2.0
+> aggregate(all_trips$ride_length ~ all_trips$member_casual + all_trips$day_of_week, FUN = max)
+   all_trips$member_casual all_trips$day_of_week all_trips$ride_length
+1                   casual                Monday               1922127
+2                   member                Monday                 89575
+3                   casual               Tuesday                928978
+4                   member               Tuesday                 87722
+5                   casual             Wednesday               1824033
+6                   member             Wednesday                 87634
+7                   casual              Thursday               1624968
+8                   member              Thursday                 88538
+9                   casual                Friday               1357794
+10                  member                Friday                 87318
+11                  casual              Saturday               2442301
+12                  member              Saturday                 85023
+13                  casual                Sunday               2497750
+14                  member                Sunday                 89183
+
+//Analyse ridership data by type and weekday
+all_trips %>% mutate(weekday = wday(started_at, label = TRUE)) %>% group_by(member_casual, weekday) %>% summarise(number_of_rides = n(),average_duration = mean(ride_length)) %>% arrange(member_casual, weekday)
+
+member_casual weekday number_of_rides average_duration
+   <chr>         <ord>             <int>            <dbl>
+ 1 casual        Sun              380706            1838.
+ 2 casual        Mon              229314            1660.
+ 3 casual        Tue              204572            1392.
+ 4 casual        Wed              210696            1368.
+ 5 casual        Thu              237586            1405.
+ 6 casual        Fri              263747            1480.
+ 7 casual        Sat              422708            1742.
+ 8 member        Sun              328478             861.
+ 9 member        Mon              377490             733.
+10 member        Tue              419976             705.
+11 member        Wed              418767             713.
+12 member        Thu              414452             724.
+13 member        Fri              365120             735.
+14 member        Sat              355507             853.
+
+
+//DATA VISUALISATION
+
+//Visualise number of rides by rider type
+all_trips %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge")
+
+//Visualise average duration
+all_trips %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) +
+  geom_col(position = "dodge")
+
+//Visualise number of rides by seasons
+all_trips %>% 
++     group_by(member_casual, season) %>% 
++     summarise(number_of_rides = n()
++               ,average_duration = mean(ride_length)) %>% 
++     arrange(member_casual, season)  %>% 
++     ggplot(aes(x = season, y = number_of_rides, fill = member_casual)) +
++     geom_col(position = "dodge")
+
+
+//EXPORTING SUMMARY FILE
+
+fin <- aggregate(all_trips$ride_length ~ all_trips$member_casual + all_trips$day_of_week + all_trips$season, FUN = mean)
+write.csv(fin, file = '/Users/evgeniya/Personal docs/Projects/avg_ride_length_fin.csv')
