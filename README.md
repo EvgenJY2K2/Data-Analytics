@@ -6,7 +6,7 @@ This repository contains hands-on projects that I have completed as part of the 
 * [Cyclistic RStudio Code](https://github.com/EvgenJY2K2/Data-Analytics/blob/main/Cyclistic%20Case%20Study%20RStudio%20Code)  
 * [Cyclistic Final CSV File](https://github.com/EvgenJY2K2/Data-Analytics/blob/main/Cyclistic_Final_Ride%20length.csv)
 * [Cyclistic Results Visualisation on Tabelau](https://public.tableau.com/app/profile/evgeniia.efimenko/viz/CyclisticCaseStudyAnalysis/CyclisticCaseStudyResults)
-* [Cyclistic Case Study on Kaggle](https://www.kaggle.com/code/evgenj/cyclistic-case-study)
+* [Cyclistic Case Study Report on Kaggle](https://www.kaggle.com/code/evgenj/cyclistic-case-study)
 
 #### About the course "Google Data Analytics Professional Certificate"
 
